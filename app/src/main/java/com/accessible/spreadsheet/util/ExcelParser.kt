@@ -93,7 +93,7 @@ object ExcelParser {
         }
 
         return when (cell.cellType) {
-            CellType.NUMERIC -> {
+            org.apache.poi.ss.usermodel.CellType.NUMERIC -> {
                 if (DateUtil.isCellDateFormatted(cell)) {
                     CellData(
                         value = cell.dateCellValue.toString(),
@@ -118,19 +118,19 @@ object ExcelParser {
                     )
                 }
             }
-            CellType.STRING -> CellData(
+            org.apache.poi.ss.usermodel.CellType.STRING -> CellData(
                 value = cell.stringCellValue,
                 row = row,
                 col = col,
                 type = CellType.STRING
             )
-            CellType.BOOLEAN -> CellData(
+            org.apache.poi.ss.usermodel.CellType.BOOLEAN -> CellData(
                 value = if (cell.booleanCellValue) "TRUE" else "FALSE",
                 row = row,
                 col = col,
                 type = CellType.BOOLEAN
             )
-            CellType.FORMULA -> {
+            org.apache.poi.ss.usermodel.CellType.FORMULA -> {
                 try {
                     val evaluated = evaluator.evaluate(cell)
                     CellData(
@@ -150,19 +150,19 @@ object ExcelParser {
                     )
                 }
             }
-            CellType.BLANK -> CellData(value = "", row = row, col = col, type = CellType.EMPTY)
+            org.apache.poi.ss.usermodel.CellType.BLANK -> CellData(value = "", row = row, col = col, type = CellType.EMPTY)
             else -> CellData(value = cell.toString(), row = row, col = col)
         }
     }
 
     private fun formatEvaluatedValue(cellValue: CellValue): String {
         return when (cellValue.cellType) {
-            CellType.NUMERIC -> {
+            org.apache.poi.ss.usermodel.CellType.NUMERIC -> {
                 val num = cellValue.numberValue
                 if (num == num.toLong().toDouble()) num.toLong().toString() else num.toString()
             }
-            CellType.STRING -> cellValue.stringValue
-            CellType.BOOLEAN -> if (cellValue.booleanValue) "TRUE" else "FALSE"
+            org.apache.poi.ss.usermodel.CellType.STRING -> cellValue.stringValue
+            org.apache.poi.ss.usermodel.CellType.BOOLEAN -> if (cellValue.booleanValue) "TRUE" else "FALSE"
             else -> cellValue.toString()
         }
     }

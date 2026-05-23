@@ -294,7 +294,7 @@ fun CellActionSheet(
 }
 
 @Composable
-private PropertyRow(label: String, value: String) {
+private fun PropertyRow(propertyName: String, value: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -302,7 +302,7 @@ private PropertyRow(label: String, value: String) {
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            text = label,
+            text = propertyName,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
