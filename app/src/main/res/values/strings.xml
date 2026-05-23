@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">无障碍表格</string>
+    <string name="app_name_full">无障碍表格查看器</string>
+    <string name="open_file">打开文件</string>
+    <string name="edit_cell">编辑单元格</string>
+    <string name="copy_value">复制值</string>
+    <string name="view_properties">查看属性</string>
+    <string name="close">关闭</string>
+    <string name="save">保存</string>
+    <string name="cancel">取消</string>
+    <string name="loading">正在加载文件…</string>
+    <string name="error_loading">加载失败</string>
+    <string name="retry">重试</string>
+    <string name="welcome_title">无障碍表格查看器</string>
+    <string name="welcome_subtitle">支持 .xls 和 .xlsx 格式的 Excel 文件\n完全适配屏幕阅读器</string>
+    <string name="welcome_tip_title">使用提示</string>
+    <string name="welcome_tip_1">点击单元格可查看操作选项</string>
+    <string name="welcome_tip_2">支持编辑、复制和查看属性</string>
+    <string name="welcome_tip_3">使用屏幕阅读器手势在单元格间导航</string>
+    <string name="welcome_tip_4">从其他应用也可直接打开 Excel 文件</string>
+    <string name="file_info">文件信息</string>
+    <string name="sheet_tab">工作表标签</string>
+    <string name="cell_position">单元格位置</string>
+    <string name="cell_value">单元格值</string>
+    <string name="cell_type">单元格类型</string>
+    <string name="cell_formula">公式</string>
+    <string name="empty_cell">空单元格</string>
+    <string name="copied_to_clipboard">已复制到剪贴板</string>
+    <string name="saved">已保存</string>
+</resources>

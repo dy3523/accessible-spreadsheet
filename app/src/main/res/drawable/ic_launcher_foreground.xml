@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Table icon -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M28,30h52c2.2,0 4,1.8 4,4v40c0,2.2 -1.8,4 -4,4h-52c-2.2,0 -4,-1.8 -4,-4v-40c0,-2.2 1.8,-4 4,-4z"/>
+    <!-- Grid lines -->
+    <path
+        android:fillColor="#1A6B3C"
+        android:pathData="M28,42h52v-4c0,-2.2 -1.8,-4 -4,-4h-44c-2.2,0 -4,1.8 -4,4v4z"/>
+    <path
+        android:fillColor="#A4F5B7"
+        android:pathData="M28,52h52v-10h-52v10z"/>
+    <path
+        android:fillColor="#1A6B3C"
+        android:pathData="M28,62h52v-10h-52v10z"/>
+    <path
+        android:fillColor="#A4F5B7"
+        android:pathData="M28,70v4c0,2.2 1.8,4 4,4h44c2.2,0 4,-1.8 4,-4v-4h-52z"/>
+    <!-- Vertical divider -->
+    <path
+        android:fillColor="#1A6B3C"
+        android:pathData="M48,42v36"/>
+    <path
+        android:strokeColor="#1A6B3C"
+        android:strokeWidth="2"
+        android:pathData="M48,42v36"/>
+</vector>
