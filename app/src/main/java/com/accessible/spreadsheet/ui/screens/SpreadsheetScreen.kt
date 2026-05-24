@@ -3,20 +3,14 @@ package com.accessible.spreadsheet.ui.screens
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.focusable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.font.FontWeight
@@ -28,16 +22,25 @@ import com.accessible.spreadsheet.model.WorkbookData
 import com.accessible.spreadsheet.ui.components.*
 import kotlinx.coroutines.launch
 
+/**
+ * Main screen of the app. Handles both the welcome state and spreadsheet display.
+ * Top bar has a menu with Settings and About (replacing redundant buttons).
+ * Table uses grid layout with native table semantics for TalkBack table navigation.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SpreadsheetScreen(
     viewModel: SpreadsheetViewModel,
+    onNavigateToSettings: () -> Unit,
+    onShowAbout: () -> Unit,
     initialUri: Uri? = null,
     initialFileName: String? = null
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val scope = rememberCoroutineScope()
+
+    val settingsManager = remember { SettingsManager(context) }
 
     // File picker launcher
     val filePickerLauncher = rememberLauncherForActivityResult(
@@ -85,35 +88,10 @@ fun SpreadsheetScreen(
                     }
                 },
                 actions = {
-                    // Open file button
-                    IconButton(
-                        onClick = {
-                            filePickerLauncher.launch(
-                                arrayOf(
-                                    "application/vnd.ms-excel",
-                                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                                    "application/vnd.ms-excel.sheet.macroEnabled.12"
-                                )
-                            )
-                        },
-                        modifier = Modifier.semantics {
-                            contentDescription = "打开Excel文件"
-                        }
-                    ) {
-                        Icon(Icons.Default.FolderOpen, contentDescription = null)
-                    }
-
-                    // Info button
-                    uiState.workbook?.let { workbook ->
-                        IconButton(
-                            onClick = { /* Show file info */ },
-                            modifier = Modifier.semantics {
-                                contentDescription = "文件信息: ${workbook.fileName}, ${workbook.sheetCount}个工作表"
-                            }
-                        ) {
-                            Icon(Icons.Default.Info, contentDescription = null)
-                        }
-                    }
+                    TopBarMenu(
+                        onSettingsClick = onNavigateToSettings,
+                        onAboutClick = onShowAbout
+                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -166,7 +144,8 @@ fun SpreadsheetScreen(
                         selectedCellCol = uiState.selectedCellCol,
                         onCellClick = { row, col -> viewModel.selectCell(row, col) },
                         onSheetSelect = { viewModel.selectSheet(it) },
-                        getCellDescription = { row, col -> viewModel.getCellDescription(row, col) }
+                        getCellDescription = { row, col -> viewModel.getCellDescription(row, col) },
+                        settingsManager = settingsManager
                     )
                 }
             }
@@ -259,7 +238,8 @@ private fun WelcomeState(onOpenFile: () -> Unit) {
                 Spacer(modifier = Modifier.height(8.dp))
                 AccessibilityTip("点击单元格可查看操作选项")
                 AccessibilityTip("支持编辑、复制和查看属性")
-                AccessibilityTip("使用屏幕阅读器手势在单元格间导航")
+                AccessibilityTip("TalkBack用户可使用表格导航手势浏览行列")
+                AccessibilityTip("左右滑动浏览行内容，上下滑动浏览列内容")
                 AccessibilityTip("从其他应用也可直接打开 Excel 文件")
             }
         }
@@ -375,6 +355,10 @@ private fun ErrorState(
     }
 }
 
+/**
+ * Spreadsheet content using grid layout with native table semantics.
+ * Supports TalkBack table navigation: left/right to traverse row, up/down to traverse column.
+ */
 @Composable
 private fun SpreadsheetContent(
     workbook: WorkbookData,
@@ -383,12 +367,10 @@ private fun SpreadsheetContent(
     selectedCellCol: Int,
     onCellClick: (Int, Int) -> Unit,
     onSheetSelect: (Int) -> Unit,
-    getCellDescription: (Int, Int) -> String
+    getCellDescription: (Int, Int) -> String,
+    settingsManager: SettingsManager
 ) {
     val currentSheet = workbook.sheets[currentSheetIndex]
-    val rowScrollState = rememberLazyListState()
-    val colScrollState = rememberLazyListState()
-    val scope = rememberCoroutineScope()
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Sheet tabs
@@ -453,56 +435,68 @@ private fun SpreadsheetContent(
             }
         }
 
-        // Spreadsheet grid using LazyColumn for performance
-        // Each row is rendered as needed, with full accessibility
+        // Table grid using Column/Row with native table semantics
+        // This enables TalkBack table navigation (row/column traversal)
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .weight(1f)
         ) {
-            LazyColumn(
-                state = rowScrollState,
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
                     .semantics {
+                        collectionInfo = CollectionInfo(
+                            currentSheet.rowCount,
+                            currentSheet.colCount
+                        )
                         contentDescription = "表格内容，${currentSheet.rowCount}行 ${currentSheet.colCount}列。" +
-                                "使用屏幕阅读器导航功能在单元格间移动。" +
-                                "点击任意单元格可查看操作选项。"
+                                "使用TalkBack表格导航手势浏览：左右滑动查看行内容，上下滑动查看列内容。"
                     }
             ) {
                 // Column headers row
-                item(key = "header") {
-                    LazyRow {
-                        item(key = "corner") {
-                            CornerHeader()
+                Row(
+                    modifier = Modifier
+                        .horizontalScroll(rememberScrollState())
+                        .semantics {
+                            contentDescription = "列标题行"
                         }
-                        items(currentSheet.colCount) { colIndex ->
-                            ColumnHeader(colIndex = colIndex)
-                        }
+                ) {
+                    // Row header spacer (empty, aligns with row number column)
+                    Spacer(
+                        modifier = Modifier
+                            .width(48.dp)
+                            .height(40.dp)
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                    )
+                    // Column headers
+                    for (colIndex in 0 until currentSheet.colCount) {
+                        ColumnHeader(colIndex = colIndex)
                     }
                 }
 
                 // Data rows
-                items(
-                    count = currentSheet.rowCount,
-                    key = { "row_$it" }
-                ) { rowIndex ->
+                for (rowIndex in 0 until currentSheet.rowCount) {
                     val row = currentSheet.cells.getOrNull(rowIndex) ?: emptyList()
-                    LazyRow {
+                    Row(
+                        modifier = Modifier
+                            .horizontalScroll(rememberScrollState())
+                            .semantics {
+                                contentDescription = "第 ${rowIndex + 1} 行"
+                            }
+                    ) {
                         // Row header
-                        item(key = "row_header_$rowIndex") {
-                            RowHeader(rowNumber = rowIndex)
-                        }
+                        RowHeader(rowNumber = rowIndex)
                         // Cells in row
-                        items(
-                            count = row.size,
-                            key = { "cell_${rowIndex}_$it" }
-                        ) { colIndex ->
+                        for (colIndex in 0 until row.size) {
                             val cell = row.getOrNull(colIndex) ?: CellData("", rowIndex, colIndex)
                             SpreadsheetCell(
                                 cell = cell,
                                 isSelected = rowIndex == selectedCellRow && colIndex == selectedCellCol,
-                                onCellClick = { onCellClick(rowIndex, colIndex) }
+                                onCellClick = { onCellClick(rowIndex, colIndex) },
+                                settingsManager = settingsManager
                             )
                         }
                     }

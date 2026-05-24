@@ -71,14 +71,25 @@ private val DarkColorScheme = darkColorScheme(
     surfaceTint = Color(0xFF89D89E)
 )
 
+/**
+ * Main theme composable.
+ * @param themeMode "system", "light", or "dark"
+ * @param useDynamicColor whether to use Material You dynamic colors
+ */
 @Composable
 fun AccessibleSpreadsheetTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    themeMode: String = "system",
+    useDynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
+    val darkTheme = when (themeMode) {
+        "light" -> false
+        "dark" -> true
+        else -> isSystemInDarkTheme()
+    }
+
     val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+        useDynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context)
             else dynamicLightColorScheme(context)

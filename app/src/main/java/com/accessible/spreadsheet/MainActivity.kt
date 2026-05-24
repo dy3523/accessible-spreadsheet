@@ -9,8 +9,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import com.accessible.spreadsheet.data.SpreadsheetViewModel
+import com.accessible.spreadsheet.ui.components.AboutDialog
+import com.accessible.spreadsheet.ui.screens.SettingsManager
+import com.accessible.spreadsheet.ui.screens.SettingsScreen
 import com.accessible.spreadsheet.ui.screens.SpreadsheetScreen
 import com.accessible.spreadsheet.ui.theme.AccessibleSpreadsheetTheme
 
@@ -31,12 +35,16 @@ class MainActivity : ComponentActivity() {
         val intentFileName: String? = intentUri?.let { getFileNameFromIntent(it) }
 
         setContent {
-            AccessibleSpreadsheetTheme {
+            val settingsManager = remember { SettingsManager(this@MainActivity) }
+            AccessibleSpreadsheetTheme(
+                themeMode = settingsManager.theme,
+                useDynamicColor = settingsManager.useDynamicColor
+            ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    SpreadsheetScreen(
+                    AppContent(
                         viewModel = viewModel,
                         initialUri = intentUri,
                         initialFileName = intentFileName
@@ -49,15 +57,6 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        // Handle new intent when app is already running
-        val uri: Uri? = when (intent.action) {
-            Intent.ACTION_VIEW, Intent.ACTION_EDIT -> intent.data
-            else -> null
-        }
-        uri?.let {
-            val fileName = getFileNameFromIntent(it) ?: "未知文件"
-            // The ViewModel will be re-loaded via LaunchedEffect in the screen
-        }
     }
 
     private fun getFileNameFromIntent(uri: Uri): String? {
@@ -67,6 +66,42 @@ class MainActivity : ComponentActivity() {
                 val nameIndex = it.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
                 if (nameIndex >= 0) it.getString(nameIndex) else null
             } else null
+        }
+    }
+}
+
+/**
+ * Top-level app content managing screen navigation.
+ */
+@Composable
+private fun AppContent(
+    viewModel: SpreadsheetViewModel,
+    initialUri: Uri?,
+    initialFileName: String?
+) {
+    var currentScreen by remember { mutableStateOf("main") }
+    var showAboutDialog by remember { mutableStateOf(false) }
+
+    when (currentScreen) {
+        "settings" -> {
+            SettingsScreen(
+                onBack = { currentScreen = "main" }
+            )
+        }
+        else -> {
+            SpreadsheetScreen(
+                viewModel = viewModel,
+                onNavigateToSettings = { currentScreen = "settings" },
+                onShowAbout = { showAboutDialog = true },
+                initialUri = initialUri,
+                initialFileName = initialFileName
+            )
+
+            if (showAboutDialog) {
+                AboutDialog(
+                    onDismiss = { showAboutDialog = false }
+                )
+            }
         }
     }
 }

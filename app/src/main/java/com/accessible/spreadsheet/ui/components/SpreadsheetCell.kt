@@ -21,16 +21,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.accessible.spreadsheet.model.CellData
 import com.accessible.spreadsheet.model.CellType
+import com.accessible.spreadsheet.ui.screens.AnnouncementType
+import com.accessible.spreadsheet.ui.screens.SettingsManager
 
 /**
- * A single spreadsheet cell optimized for screen reader accessibility.
- * Each cell is a focusable, clickable element with full semantic information.
+ * A single spreadsheet cell optimized for screen reader table navigation.
+ * Uses collectionItemInfo for TalkBack table navigation support.
  */
 @Composable
 fun SpreadsheetCell(
     cell: CellData,
     isSelected: Boolean,
     onCellClick: () -> Unit,
+    settingsManager: SettingsManager,
     modifier: Modifier = Modifier,
     focusRequester: FocusRequester = FocusRequester()
 ) {
@@ -67,10 +70,19 @@ fun SpreadsheetCell(
         CellType.EMPTY -> "空"
     }
 
+    // Build configurable content description
+    val contentDesc = buildCellContentDescription(
+        cell = cell,
+        position = position,
+        typeLabel = typeLabel,
+        isSelected = isSelected,
+        settingsManager = settingsManager
+    )
+
     Box(
         modifier = modifier
             .heightIn(min = 48.dp)
-            .fillMaxWidth()
+            .widthIn(min = 80.dp)
             .background(backgroundColor)
             .border(1.dp, borderColor)
             .focusRequester(focusRequester)
@@ -78,10 +90,14 @@ fun SpreadsheetCell(
             .focusable()
             .clickable { onCellClick() }
             .semantics(mergeDescendants = true) {
-                contentDescription = "单元格 $position" +
-                        ", ${cell.value.ifBlank { "空" }}" +
-                        ", $typeLabel" +
-                        if (cell.formula != null) ", 公式: ${cell.formula}" else ""
+                contentDescription = contentDesc
+                // Table navigation support for TalkBack
+                collectionItemInfo = CollectionItemInfo(
+                    /* rowSpan */ 1,
+                    /* columnSpan */ 1,
+                    /* rowIndex */ cell.row,
+                    /* columnIndex */ cell.col
+                )
                 role = Role.Button
                 stateDescription = if (isSelected) "已选中" else ""
             }
@@ -97,6 +113,43 @@ fun SpreadsheetCell(
             overflow = TextOverflow.Ellipsis
         )
     }
+}
+
+/**
+ * Build cell content description based on user settings.
+ * Respects the order and toggle of announcement types.
+ */
+private fun buildCellContentDescription(
+    cell: CellData,
+    position: String,
+    typeLabel: String,
+    isSelected: Boolean,
+    settingsManager: SettingsManager
+): String {
+    val order = settingsManager.getAnnouncementOrder()
+    val enabled = settingsManager.getEnabledAnnouncements()
+
+    val parts = mutableListOf<String>()
+
+    for (type in order) {
+        if (!enabled.contains(type.key)) continue
+
+        when (type) {
+            AnnouncementType.POSITION -> parts.add("单元格 $position")
+            AnnouncementType.VALUE -> parts.add(cell.value.ifBlank { "空" })
+            AnnouncementType.TYPE -> parts.add(typeLabel)
+            AnnouncementType.FORMULA -> {
+                if (cell.formula != null) {
+                    parts.add("公式: ${cell.formula}")
+                }
+            }
+            AnnouncementType.SELECTED -> {
+                if (isSelected) parts.add("已选中")
+            }
+        }
+    }
+
+    return parts.joinToString("，")
 }
 
 /**
@@ -140,7 +193,7 @@ fun ColumnHeader(
     Box(
         modifier = modifier
             .heightIn(min = 40.dp)
-            .fillMaxWidth()
+            .widthIn(min = 80.dp)
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .border(1.dp, MaterialTheme.colorScheme.outlineVariant)
             .semantics {
@@ -153,30 +206,6 @@ fun ColumnHeader(
             text = colLetter,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-/**
- * Corner cell at top-left of the grid.
- */
-@Composable
-fun CornerHeader(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .heightIn(min = 40.dp)
-            .width(48.dp)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant)
-            .semantics {
-                contentDescription = "表格角落"
-            },
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "",
-            fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
